@@ -1,0 +1,26 @@
+{
+  "name": "chatbot-gpt4",
+  "version": "1.0.0",
+  "description": "A chatbot using OpenAI GPT-4 API deployed on Netlify",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build-client",
+    "build-client": "parcel build public/index.html --out-dir build --public-url ./",
+    "dev": "parcel public/index.html --out-dir build --open",
+    "start": "npm run build && npm run serve",
+    "serve": "netlify dev"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.1",
+    "parcel-bundler": "^1.12.5"
+  },
+  "devDependencies": {
+    "netlify-cli": "^6.14.21"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [],
+  "author": "Votre Nom",
+  "license": "MIT"
+}
