@@ -4,111 +4,111 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>LLM-HUB</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f4f4;
-            touch-action: manipulation; /* Avoid zoom on touch devices */
-        }
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f4f4f4;
+        touch-action: manipulation; /* Avoid zoom on touch devices */
+    }
+    .chat-container {
+        width: 90vw; /* Adjust width for better responsiveness */
+        max-width: 400px; /* Ensure max width does not exceed 400px */
+        height: 80vh; /* Adjust height to be responsive */
+        max-height: 600px; /* Ensure max height does not exceed 600px */
+        background: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+        position: fixed;
+        bottom: 10px; /* Adjust the bottom margin */
+        right: 10px; /* Adjust the right margin */
+        display: none; /* Hidden by default */
+        flex-direction: column;
+        touch-action: none; /* Prevent zoom on input fields */
+    }
+    .chat-header {
+        background: #4CAF50;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+    }
+    .chat-box {
+        height: calc(100% - 80px); /* Adjust height for better responsiveness */
+        overflow-y: scroll;
+        padding: 10px;
+        flex-grow: 1;
+    }
+    .chat-message {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 5px;
+        background: #f1f1f1;
+    }
+    .chat-message.bot {
+        background: #e1f5fe;
+    }
+    .chat-message.user {
+        background: #dcedc8;
+        text-align: right;
+    }
+    .chat-input {
+        display: flex;
+        border-top: 1px solid #ddd;
+        padding: 5px; /* Added padding to prevent input from touching the edges */
+    }
+    .chat-input input {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        outline: none;
+        font-size: 16px; /* Set a standard font size */
+    }
+    .chat-input button {
+        padding: 10px;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    .chat-input button:hover {
+        background: #45a049;
+    }
+    .deploy-info {
+        text-align: center;
+        padding: 5px;
+        font-size: 12px;
+        background: #f4f4f4;
+        border-top: 1px solid #ddd;
+    }
+    code {
+        background: #f4f4f4;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    pre {
+        background: #f4f4f4;
+        padding: 10px;
+        border-radius: 5px;
+        overflow: auto;
+    }
+    @media (max-width: 600px) {
         .chat-container {
-            width: 90vw; /* Adjust width for better responsiveness */
-            max-width: 400px; /* Ensure max width does not exceed 400px */
-            height: 70vh; /* Adjust height to be responsive */
-            max-height: 500px; /* Ensure max height does not exceed 500px */
-            background: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
-            position: fixed;
-            bottom: 10px; /* Adjust the bottom margin */
-            right: 10px; /* Adjust the right margin */
-            display: none; /* Hidden by default */
-            flex-direction: column;
-            touch-action: none; /* Prevent zoom on input fields */
-        }
-        .chat-header {
-            background: #4CAF50;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
+            width: 95vw; /* Slightly larger width on mobile */
+            height: 80vh; /* Adjust height for mobile screens */
+            bottom: 5px; /* Reduce bottom margin */
+            right: 5px; /* Reduce right margin */
         }
         .chat-box {
-            height: calc(100% - 80px); /* Adjust height for better responsiveness */
-            overflow-y: scroll;
-            padding: 10px;
-            flex-grow: 1;
+            height: calc(100% - 70px); /* Adjust height for mobile screens */
         }
-        .chat-message {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-            background: #f1f1f1;
-        }
-        .chat-message.bot {
-            background: #e1f5fe;
-        }
-        .chat-message.user {
-            background: #dcedc8;
-            text-align: right;
-        }
-        .chat-input {
-            display: flex;
-            border-top: 1px solid #ddd;
-            padding: 5px; /* Added padding to prevent input from touching the edges */
-        }
-        .chat-input input {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            outline: none;
-            font-size: 16px; /* Set a standard font size */
-        }
-        .chat-input button {
-            padding: 10px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        .chat-input button:hover {
-            background: #45a049;
-        }
-        .deploy-info {
-            text-align: center;
-            padding: 5px;
-            font-size: 12px;
-            background: #f4f4f4;
-            border-top: 1px solid #ddd;
-        }
-        code {
-            background: #f4f4f4;
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
-        pre {
-            background: #f4f4f4;
-            padding: 10px;
-            border-radius: 5px;
-            overflow: auto;
-        }
-        @media (max-width: 600px) {
-            .chat-container {
-                width: 95vw; /* Slightly larger width on mobile */
-                height: 80vh; /* Adjust height for mobile screens */
-                bottom: 5px; /* Reduce bottom margin */
-                right: 5px; /* Reduce right margin */
-            }
-            .chat-box {
-                height: calc(100% - 70px); /* Adjust height for mobile screens */
-            }
-        }
-    </style>
+    }
+</style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
