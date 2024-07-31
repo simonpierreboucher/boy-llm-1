@@ -16,38 +16,19 @@
             touch-action: manipulation; /* Avoid zoom on touch devices */
         }
         .chat-container {
-            display: flex;
-            width: 800px;
-            height: 500px;
+            width: 400px; /* Adjust width */
+            height: 500px; /* Adjust height */
             background: #fff;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             overflow: hidden;
-            position: absolute;
+            display: flex; /* Always display */
+            flex-direction: column;
+            touch-action: none; /* Prevent zoom on input fields */
+            position: absolute; /* Center the container */
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        .sidebar {
-            width: 150px;
-            background: #4CAF50;
-            color: white;
-            padding: 10px;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        }
-        .sidebar h2 {
-            font-size: 18px;
-            margin: 0;
-            padding: 0;
-        }
-        .sidebar .token-counter {
-            margin-top: 20px;
-            font-size: 16px;
-        }
-        .chat-content {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
+            transform: translate(-50%, -50%); /* Center the container */
         }
         .chat-header {
             background: #4CAF50;
@@ -56,16 +37,16 @@
             text-align: center;
         }
         .chat-box {
-            height: calc(100% - 80px);
+            height: calc(100% - 80px); /* Adjust height for better responsiveness */
             overflow-y: scroll;
             padding: 10px;
+            flex-grow: 1;
         }
         .chat-message {
             margin: 10px 0;
             padding: 10px;
             border-radius: 5px;
             background: #f1f1f1;
-            position: relative;
         }
         .chat-message.bot {
             background: #e1f5fe;
@@ -74,32 +55,17 @@
             background: #dcedc8;
             text-align: right;
         }
-        .chat-message button.copy-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            padding: 5px 10px;
-            font-size: 12px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .chat-message button.copy-btn:hover {
-            background: #45a049;
-        }
         .chat-input {
             display: flex;
             border-top: 1px solid #ddd;
-            padding: 5px;
+            padding: 5px; /* Added padding to prevent input from touching the edges */
         }
         .chat-input input {
             flex: 1;
             padding: 10px;
             border: none;
             outline: none;
-            font-size: 16px;
+            font-size: 16px; /* Set a standard font size */
         }
         .chat-input button {
             padding: 10px;
@@ -131,12 +97,11 @@
         }
         @media (max-width: 600px) {
             .chat-container {
-                width: 95vw;
-                height: 80vh;
-                flex-direction: column;
+                width: 95vw; /* Slightly larger width on mobile */
+                height: 80vh; /* Adjust height for mobile screens */
             }
-            .chat-content {
-                height: calc(100% - 60px);
+            .chat-box {
+                height: calc(100% - 70px); /* Adjust height for mobile screens */
             }
         }
         .controls {
@@ -158,35 +123,26 @@
             background: #45a049;
         }
     </style>
-</head>
-<body>
-    <div class="chat-container">
-        <div class="sidebar">
-            <h2>Token Counter</h2>
-            <div class="token-counter">
-                <p>Input Tokens: <span id="input-tokens">0</span></p>
-                <p>Output Tokens: <span id="output-tokens">0</span></p>
-            </div>
-        </div>
-        <div class="chat-content">
-            <div class="chat-header">Real Estate Demo</div>
-            <div class="chat-box" id="chat-box"></div>
-            <div class="chat-input">
-                <input type="text" id="user-input" placeholder="Type your message here..." onkeydown="checkEnter(event)">
-                <button onclick="sendMessage()">Send</button>
-            </div>
-            <div class="controls">
-                <button onclick="downloadHistory()">Download History</button>
-                <input type="file" id="file-input" style="display: none;" accept=".json" onchange="loadHistory(event)">
-                <button onclick="document.getElementById('file-input').click()">Upload History</button>
-            </div>
-            <div class="deploy-info">Deployed by LLM-HUB.IO with DAN LLM</div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div class="chat-container" id="chat-container">
+        <div class="chat-header">Real Estate Demo</div>
+        <div class="chat-box" id="chat-box"></div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message here..." onkeydown="checkEnter(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <div class="controls">
+            <button onclick="downloadHistory()">Download History</button>
+            <input type="file" id="file-input" style="display: none;" accept=".json" onchange="loadHistory(event)">
+            <button onclick="document.getElementById('file-input').click()">Upload History</button>
+        </div>
+        <div class="deploy-info">Deployed by LLM-HUB.IO with DAN LLM</div>
+    </div>
+
     <script>
         let messages = [
             {
@@ -194,8 +150,6 @@
                 content: ``
             }
         ];
-        let inputTokenCount = 0;
-        let outputTokenCount = 0;
 
         function checkEnter(event) {
             if (event.key === 'Enter') {
@@ -213,37 +167,60 @@
             messages.push({ role: 'user', content: userInput });
 
             const botMessageElement = addMessageToChatBox('bot', '');
-            await streamFormattedText(botMessageElement, userInput);
-            messages.push({ role: 'assistant', content: botMessageElement.innerText });
+            const response = await getGPT4Response(messages);
+            messages.push({ role: 'assistant', content: response });
+
+            streamFormattedText(botMessageElement, response);
         }
 
         function addMessageToChatBox(sender, message) {
             const chatBox = document.getElementById('chat-box');
             const messageElement = document.createElement('div');
             messageElement.classList.add('chat-message', sender);
-            messageElement.innerHTML = `
-                ${marked.parse(message)}
-                <button class="copy-btn" onclick="copyMessage(this)">Copy</button>
-            `;
+            messageElement.innerHTML = marked.parse(message);
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
             MathJax.typesetPromise();
             return messageElement;
         }
 
-        function streamFormattedText(element, userInput) {
-            const eventSource = new EventSource(`/api/stream?input=${encodeURIComponent(userInput)}`);
+        function streamFormattedText(element, text) {
+            let index = 0;
+            function type() {
+                if (index < text.length) {
+                    element.innerHTML = marked.parse(text.substring(0, index + 1));
+                    index++;
+                    setTimeout(type, 30); // Adjust the speed of typing here
+                    MathJax.typesetPromise();
+                }
+            }
+            type();
+        }
 
-            eventSource.onmessage = function(event) {
-                const chunk = event.data;
-                element.innerHTML += marked.parse(chunk);
-                MathJax.typesetPromise();
-            };
+        async function getGPT4Response(messages) {
+            try {
+                const response = await fetch('/.netlify/functions/getGPT4Response', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ messages: messages })
+                });
 
-            eventSource.onerror = function(error) {
-                console.error('Streaming error:', error);
-                eventSource.close();
-            };
+                if (!response.ok) {
+                    console.error('Error:', response.status, response.statusText);
+                    const errorDetails = await response.text();
+                    console.error('Error details:', errorDetails);
+                    return `Error: ${response.statusText}`;
+                }
+
+                const data = await response.json();
+                console.log('API Response:', data);
+                return data.choices && data.choices.length > 0 ? data.choices[0].message.content.trim() : 'No response from OpenAI.';
+            } catch (error) {
+                console.error('Fetch error:', error);
+                return 'Error: Unable to get response from OpenAI.';
+            }
         }
 
         function downloadHistory() {
@@ -262,7 +239,8 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     try {
-                        messages = JSON.parse(e.target.result);
+                        const loadedMessages = JSON.parse(e.target.result);
+                        messages = loadedMessages;
                         document.getElementById('chat-box').innerHTML = '';
                         messages.forEach(msg => addMessageToChatBox(msg.role, msg.content));
                     } catch (error) {
@@ -273,16 +251,6 @@
                 reader.readAsText(file);
             }
         }
-
-        function copyMessage(button) {
-            const messageText = button.parentElement.textContent.trim();
-            navigator.clipboard.writeText(messageText).then(() => {
-                alert('Message copied to clipboard!');
-            }).catch(err => {
-                console.error('Failed to copy message: ', err);
-            });
-        }
     </script>
 </body>
 </html>
-
