@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Chatbot GPT-4</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+            touch-action: manipulation; /* Avoid zoom on touch devices */
+        }
+        .chat-container {
+            width: 90vw; /* Adjust width for better responsiveness */
+            max-width: 400px; /* Ensure max width does not exceed 400px */
+            height: 70vh; /* Adjust height to be responsive */
+            max-height: 500px; /* Ensure max height does not exceed 500px */
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            position: fixed;
+            bottom: 10px; /* Adjust the bottom margin */
+            right: 10px; /* Adjust the right margin */
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            touch-action: none; /* Prevent zoom on input fields */
+        }
+        .chat-header {
+            background: #4CAF50;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .chat-box {
+            height: calc(100% - 80px); /* Adjust height for better responsiveness */
+            overflow-y: scroll;
+            padding: 10px;
+            flex-grow: 1;
+        }
+        .chat-message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f1f1f1;
+        }
+        .chat-message.bot {
+            background: #e1f5fe;
+        }
+        .chat-message.user {
+            background: #dcedc8;
+            text-align: right;
+        }
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #ddd;
+            padding: 5px; /* Added padding to prevent input from touching the edges */
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+            font-size: 16px; /* Set a standard font size */
+        }
+        .chat-input button {
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .chat-input button:hover {
+            background: #45a049;
+        }
+        .deploy-info {
+            text-align: center;
+            padding: 5px;
+            font-size: 12px;
+            background: #f4f4f4;
+            border-top: 1px solid #ddd;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow: auto;
+        }
+        @media (max-width: 600px) {
+            .chat-container {
+                width: 95vw; /* Slightly larger width on mobile */
+                height: 80vh; /* Adjust height for mobile screens */
+                bottom: 5px; /* Reduce bottom margin */
+                right: 5px; /* Reduce right margin */
+            }
+            .chat-box {
+                height: calc(100% - 70px); /* Adjust height for mobile screens */
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div class="chat-container" id="chat-container">
+        <div class="chat-header" onclick="toggleChat()">Real estate bot</div>
+        <div class="chat-box" id="chat-box"></div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message here..." onkeydown="checkEnter(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <div class="deploy-info">Deployed by LLM-HUB.IO with DAN LLM</div>
+    </div>
+
+    <button id="open-chat-btn" style="position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer;">Open Chat</button>
+
+    <script>
+        document.getElementById('open-chat-btn').addEventListener('click', function() {
+            document.getElementById('chat-container').style.display = 'flex';
+            this.style.display = 'none';
+        });
+
+        function toggleChat() {
+            const chatContainer = document.getElementById('chat-container');
+            const openChatBtn = document.getElementById('open-chat-btn');
+            if (chatContainer.style.display === 'none' || chatContainer.style.display === '') {
+                chatContainer.style.display = 'flex';
+                openChatBtn.style.display = 'none';
+            } else {
+                chatContainer.style.display = 'none';
+                openChatBtn.style.display = 'block';
+            }
+        }
+
+        let messages = [
+            {
+                role: 'system',
+                content: `Vous êtes un agent de Logis Expert, une entreprise de gestion immobilière. Votre rôle est de conseiller les clients sur les appartements disponibles. Voici les informations sur les appartements disponibles :
+
+APP,DISPONIBILITÉ,PIED CARRÉ,PRIX,RABAIS,TAILLE,ÉTAGE,index,timestamp,timestampString,uid,url,url_uid
+Appartement 3520,01 août 2024,1250 pi2,1595$/mois,,4 ½,Sous-sol,1,1721997908854,Fri, 26 Jul 2024 12:45:08 GMT,xavHDh0Gea4u1zLEH1aN,https://logis-experts.com/immeuble/3520-3528-rue-masson,14
+Appartement 100b,01 octobre 2024,1060 pi2,1850$/mois,,4 ½,Étage 2,2,1721997918107,Fri, 26 Jul 2024 12:45:18 GMT,VjfhUlSWboQaIH6XrySe,https://logis-experts.com/immeuble/790-alphonse-desjardins,24
+Appartement 100c,01 octobre 2024,741 pi2,1850$/mois,,3 ½,Étage 2,3,1721997918107,Fri, 26 Jul 2024 12:45:18 GMT,nhyw8RwZHGHyxQ1Ka9H6,https://logis-experts.com/immeuble/790-alphonse-desjardins,24
+Appartement 100a,01 octobre 2024,823 pi2,1850$/mois,,3 ½,Étage 2,4,1721997918107,Fri, 26 Jul 2024 12:45:18 GMT,AnkpxkyoAQUk3B4lo32f,https://logis-experts.com/immeuble/790-alphonse-desjardins,24
+Appartement 402,01 septembre 2024,1010 pi2,1830$/mois,Rabais de 155$/mois,4 ½,Étage 4,5,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,sh6dZKQgrCCLNV1VovAg,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 502,01 septembre 2024,1010 pi2,1900$/mois,Rabais de 155$/mois,4 ½,Étage 5,6,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,Aa3p0PK5JsB15TIplzUn,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 702,01 septembre 2024,1010 pi2,1940$/mois,Rabais de 155$/mois,4 ½,Étage 7,7,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,mjV460imWv00Q4Hz9rnc,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 801,01 septembre 2024,677 pi2,1470$/mois,Rabais de 120$/mois,3 ½,Étage 8,8,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,p3j80c4bk4TFdV9MTqU4,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 802,01 septembre 2024,1010 pi2,1960$/mois,Rabais de 165$/mois,4 ½,Étage 8,9,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,O8wpLBSF2DQ0kFwLSThO,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 902,01 septembre 2024,1010 pi2,1980$/mois,Rabais de 165$/mois,4 ½,Étage 9,10,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,B730T5NcYgNVI9vAAIFU,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1002,01 septembre 2024,1010 pi2,1950$/mois,Rabais de 165$/mois,4 ½,Étage 10,11,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,3xW2vLWpOzUZHR81OduV,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1103,01 septembre 2024,677 pi2,1550$/mois,Rabais de 125$/mois,3 ½,Étage 11,12,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,51GwVzT2DEbFilUeeFjM,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1108,01 septembre 2024,677 pi2,1530$/mois,Rabais de 125$/mois,3 ½,Étage 11,13,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,gOIvuNAJXWU4z0775Kn5,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1201,01 septembre 2024,677 pi2,1550$/mois,Rabais de 130$/mois,3 ½,Étage 12,14,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,LnBGaFaevYRhLatnDDUh,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1202,01 septembre 2024,1010 pi2,2040$/mois,Rabais de 170$/mois,4 ½,Étage 12,15,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,zKP50L1Jaj8eC3VaLiil,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1205,01 septembre 2024,677 pi2,1570$/mois,Rabais de 130$/mois,3 ½,Étage 12,16,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,LpvYTJwprMhySgqjJGnG,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1401,01 septembre 2024,677 pi2,1700$/mois,Rabais de 140$/mois,3 ½,Étage 13,17,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,QqKtrdS0lykk7NnsLe0i,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1402,01 septembre 2024,1010 pi2,2090$/mois,Rabais de 170$/mois,4 ½,Étage 13,18,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,nFcju3nH8DfwX3eW8Roq,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1405,01 septembre 2024,677 pi2,1700$/mois,Rabais de 140$/mois,3 ½,Étage 13,19,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,DzlQ4LQcp8CZFDFwMPCx,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1407,01 septembre 2024,677 pi2,1700$/mois,Rabais de 140$/mois,3 ½,Étage 13,20,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,A6iEnevEQyBtGYH6m9lc,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1408,01 septembre 2024,677 pi2,1700$/mois,Rabais de 140$/mois,3 ½,Étage 13,21,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,JM4rhoufdcBFpf4kdQkm,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1410,01 septembre 2024,621 pi2,1570$/mois,Rabais de 130$/mois,3 ½,Étage 13,22,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,kxFhbFd52rKlTLaUCRtd,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1411,01 septembre 2024,677 pi2,1700$/mois,Rabais de 140$/mois,3 ½,Étage 13,23,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,TLCaZV6a2e0YRpoqjTQT,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1501,01 septembre 2024,677 pi2,1720$/mois,Rabais de 140$/mois,3 ½,Étage 14,24,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,XNQrH3RJLKhsqMYQOrdD,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 1510,01 septembre 2024,621 pi2,1590$/mois,,3 ½,Étage 14,25,1721997921608,Fri, 26 Jul 2024 12:45:21 GMT,1X1WzDPOYiTwkabdV1wm,https://logis-experts.com/immeuble/750-chemin-ste-foy-le-brave,0
+Appartement 100,01 septembre 2024,775 pi2,1650$/mois,Rabais de 140$/mois,4 ½,Rez-de-chaussée,26,1721997968117,Fri, 26 Jul 2024 12:46:08 GMT,3PmpqfEwWAkwZA4YaEKF,https://logis-experts.com/immeuble/361-rue-gingras-mojo,9
+Appartement 433,01 juillet 2024,765 pi2,1570$/mois,Rabais de 140$/mois,3 ½,Étage 4,27,1721997968117,Fri, 26 Jul 2024 12:46:08 GMT,idR1TDzOG89HRcV07Ybl,https://logis-experts.com/immeuble/361-rue-gingras-mojo,9
+Appartement 533,01 août 2024,765 pi2,1580$/mois,Rabais de 130$/mois,3 ½,Étage 5,28,1721997968117,Fri, 26 Jul 2024 12:46:08 GMT,1ag46CcTishpWfbAWcs1,https://logis-experts.com/immeuble/361-rue-gingras-mojo,9
+Appartement 633,01 août 2024,765 pi2,1590$/mois,,3 ½,Étage 6,29,1721997968117,Fri, 26 Jul 2024 12:46:08 GMT,aWzIgtQLvaUdOlUOKGAz,https://logis-experts.com/immeuble/361-rue-gingras-mojo,9
+
+
+tu peux te servir de ladress dans url pour présenté l'emplacement`
+            }
+        ];
+
+        function checkEnter(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input').value;
+            if (!userInput) return;
+
+            addMessageToChatBox('user', userInput);
+            document.getElementById('user-input').value = '';
+
+            messages.push({ role: 'user', content: userInput });
+
+            const botMessageElement = addMessageToChatBox('bot', '');
+            const response = await getGPT4Response(messages);
+            messages.push({ role: 'assistant', content: response });
+
+            streamFormattedText(botMessageElement, response);
+        }
+
+        function addMessageToChatBox(sender, message) {
+            const chatBox = document.getElementById('chat-box');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('chat-message', sender);
+            messageElement.innerHTML = marked.parse(message);
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            MathJax.typesetPromise();
+            return messageElement;
+        }
+
+        function streamFormattedText(element, text) {
+            let index = 0;
+            function type() {
+                if (index < text.length) {
+                    element.innerHTML = marked.parse(text.substring(0, index + 1));
+                    index++;
+                    setTimeout(type, 30); // Adjust the speed of typing here
+                    MathJax.typesetPromise();
+                }
+            }
+            type();
+        }
+
+        async function getGPT4Response(messages) {
+            try {
+                const response = await fetch('/.netlify/functions/getGPT4Response', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ messages: messages })
+                });
+
+                if (!response.ok) {
+                    console.error('Error:', response.status, response.statusText);
+                    const errorDetails = await response.text();
+                    console.error('Error details:', errorDetails);
+                    return `Error: ${response.statusText}`;
+                }
+
+                const data = await response.json();
+                console.log('API Response:', data);
+                return data.choices && data.choices.length > 0 ? data.choices[0].message.content.trim() : 'No response from OpenAI.';
+            } catch (error) {
+                console.error('Fetch error:', error);
+                return 'Error: Unable to get response from OpenAI.';
+            }
+        }
+    </script>
+</body>
+</html>
