@@ -213,12 +213,8 @@
             messages.push({ role: 'user', content: userInput });
 
             const botMessageElement = addMessageToChatBox('bot', '');
-            const response = await getGPT4Response(messages);
-            messages.push({ role: 'assistant', content: response });
-
-            updateTokenCounts(); // Update token counts after receiving the response
-
-            streamFormattedText(botMessageElement, response);
+            await streamFormattedText(botMessageElement, userInput);
+            messages.push({ role: 'assistant', content: botMessageElement.innerText });
         }
 
         function addMessageToChatBox(sender, message) {
@@ -236,19 +232,28 @@
         }
 
         function streamFormattedText(element, text) {
-            let index = 0;
-            function type() {
-                if (index < text.length) {
-                    element.innerHTML = `
-                        ${marked.parse(text.substring(0, index + 1))}
-                        <button class="copy-btn" onclick="copyMessage(this)">Copy</button>
-                    `;
-                    index++;
-                    setTimeout(type, 30); // Adjust the speed of typing here
-                    MathJax.typesetPromise();
+            const apiUrl = '/.netlify/functions/getGPT4Response'; // Ensure this endpoint supports streaming
+
+            const reader = new ReadableStreamDefaultReader();
+            const stream = new ReadableStream({
+                start(controller) {
+                    const eventSource = new EventSource(apiUrl); // Assume EventSource or a streaming API
+
+                    eventSource.onmessage = function (event) {
+                        const chunk = event.data;
+                        controller.enqueue(new TextEncoder().encode(chunk));
+                        element.innerHTML += marked.parse(chunk);
+                        MathJax.typesetPromise();
+                    };
+
+                    eventSource.onerror = function (error) {
+                        console.error('Streaming error:', error);
+                        controller.error(error);
+                    };
                 }
-            }
-            type();
+            });
+
+            return new Response(stream).text(); // Stream the response text
         }
 
         async function getGPT4Response(messages) {
@@ -260,24 +265,16 @@
                     },
                     body: JSON.stringify({ messages: messages })
                 });
-
-                if (!response.ok) {
-                    console.error('Error:', response.status, response.statusText);
-                    const errorDetails = await response.text();
-                    console.error('Error details:', errorDetails);
-                    return `Error: ${response.statusText}`;
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let text = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    text += decoder.decode(value, { stream: true });
+                    document.getElementById('chat-box').innerText = text;
                 }
-
-                const data = await response.json();
-                console.log('API Response:', data);
-
-                // Update token counts from API response
-                inputTokenCount = data.usage.total_tokens; // This assumes that API returns total tokens
-                outputTokenCount = data.usage.total_tokens; // Update accordingly if response contains separate input/output token counts
-                document.getElementById('input-tokens').innerText = inputTokenCount;
-                document.getElementById('output-tokens').innerText = outputTokenCount;
-
-                return data.choices[0].message.content;
+                return text;
             } catch (error) {
                 console.error('Fetch error:', error);
                 return 'An error occurred while getting the response.';
@@ -319,11 +316,6 @@
             }).catch(err => {
                 console.error('Failed to copy message: ', err);
             });
-        }
-
-        function updateTokenCounts() {
-            // This function will be called after receiving a response to update token counts
-            // You may need to implement logic to calculate tokens based on response from API
         }
     </script>
 </body>
