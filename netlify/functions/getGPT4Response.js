@@ -14,7 +14,8 @@ exports.handler = async function(event, context) {
             body: JSON.stringify({
                 model: "gpt-4o-mini",
                 messages: messages,
-                max_tokens: 1000
+                max_tokens: 1000,
+                stream: true  // Activer le streaming
             })
         });
 
@@ -25,11 +26,30 @@ exports.handler = async function(event, context) {
             };
         }
 
-        const data = await response.json();
-        return {
-            statusCode: 200,
-            body: JSON.stringify(data)
-        };
+        // Lire les données du flux
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let chunks = '';
+
+        return new Promise((resolve, reject) => {
+            reader.read().then(function processText({ done, value }) {
+                if (done) {
+                    resolve({
+                        statusCode: 200,
+                        body: JSON.stringify({ choices: [{ message: { content: chunks } }] })
+                    });
+                    return;
+                }
+
+                chunks += decoder.decode(value, { stream: true });
+
+                // Si vous voulez gérer les chunks en direct
+                // Vous pouvez les envoyer au client ici
+
+                return reader.read().then(processText);
+            }).catch(reject);
+        });
+
     } catch (error) {
         return {
             statusCode: 500,
