@@ -32,7 +32,7 @@ exports.handler = async function(event, context) {
         let chunks = '';
 
         return new Promise((resolve, reject) => {
-            reader.read().then(function processText({ done, value }) {
+            function processText({ done, value }) {
                 if (done) {
                     resolve({
                         statusCode: 200,
@@ -43,11 +43,10 @@ exports.handler = async function(event, context) {
 
                 chunks += decoder.decode(value, { stream: true });
 
-                // Si vous voulez gérer les chunks en direct
-                // Vous pouvez les envoyer au client ici
+                return reader.read().then(processText).catch(reject);
+            }
 
-                return reader.read().then(processText);
-            }).catch(reject);
+            reader.read().then(processText).catch(reject);
         });
 
     } catch (error) {
